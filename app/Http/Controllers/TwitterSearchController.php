@@ -87,16 +87,15 @@ class TwitterSearchController extends Controller
         if (Input::has('q')) $this->search_word = Input::get("q");
 
         $setyear = 2010;
-        if (Input::has('y'))$setyear = Input::get("y");
+        if (Input::has('y')) $setyear = Input::get("y");
 
         $this->current_year = $setyear;
 
         $setyearend = 2010;
-        if (Input::has('ye'))$setyearend = Input::get("ye");
+        if (Input::has('ye')) $setyearend = Input::get("ye");
 
         $month_start = 1;
-        if (Input::has('ms'))$month_start = Input::get("ms");
-
+        if (Input::has('ms')) $month_start = Input::get("ms");
 
         $dt = new DateTime();
         $time = $dt->format('Y-m-d_H-i-s');
@@ -104,9 +103,8 @@ class TwitterSearchController extends Controller
 
         $folder = public_path()."\\search\\".$time."\\";
 
-        if (!file_exists($folder)) {
-            File::makeDirectory($folder, 0775, true);
-        }
+        if (!file_exists($folder))  File::makeDirectory($folder, 0775, true);
+
 
         $file_name = $this->search_word."_".$time.".txt";
         $file_path = $folder.$file_name;
@@ -119,26 +117,18 @@ class TwitterSearchController extends Controller
                     $this->month = $month_start;
                     $month_start = 1;
                 }
-
                 $urls = $this->getURLForSearch();
                 $response = $this->LARACURL->get($urls);
-
                 $result = $this->year.",".$this->month.",".$this->readTwitterSearchPage($response);
                 $monthTweet[$this->month] = $result;
-
                 File::append($file_path, $result);
                 File::append($file_path, "\r\n");
             }
         }
-
         return $monthTweet;
     }
 
-
-
-
     public function getURLForSearch(){
-
         $searchWord = urlencode ( $this->search_word );
 //        $url = "https://twitter.com/search?q=%E0%B9%84%E0%B8%82%E0%B9%89%E0%B9%80%E0%B8%A5%E0%B8%B7%E0%B8%AD%E0%B8%94%E0%B8%AD%E0%B8%AD%E0%B8%81%20lang%3Ath%20since%3A2015-01-01%20until%3A2015-01-31&src=typd&lang=th";
         $since = $this->getSince();
@@ -151,28 +141,7 @@ class TwitterSearchController extends Controller
     }
 
     public function genURLForNextSearch($url_next){
-
 //        $url = "https://twitter.com/i/search/timeline?vertical=default&q=%E0%B9%84%E0%B8%82%E0%B9%89%E0%B9%80%E0%B8%A5%E0%B8%B7%E0%B8%AD%E0%B8%94%E0%B8%AD%E0%B8%AD%E0%B8%81%20lang%3Ath%20since%3A2015-01-01%20until%3A2015-01-31&src=typd&include_available_features=1&include_entities=1&lang=th&max_position=TWEET-560811067832819712-561229138082533378-BD1UO2FFu9QAAAAAAAAETAAAAAcAAAASAAEBKAAAAAAAAACAAAABAAACAAAAAAAAAAAAQAAAAAAEAAAAAAAAAgAAAAAAAAAEAAAAAAAAAAQAAAAAAACIAAAAAAAIAABACBAAAAQAAAAAAAgAAAAAAAAAAAAAACAAAAACgAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAgAAAAAAACAAAAAAAAAAAEA&reset_error_state=false";
-        $searchWord = urlencode ( $this->search_word );
-
-        $since = $this->getSince();
-        $until = $this->getUntil();
-
-        $url = "https://twitter.com/i/search/timeline?vertical=default&q=".$searchWord."%20lang%3A".$this->lang."%20since%3A".$since."%20until%3A".$until."&src=typd&include_available_features=1&include_entities=1&lang=".$this->lang."&max_position=".$url_next."&reset_error_state=false";
-        $urls = $this->LARACURL->buildUrl($url, ['s' => 'curl']);
-
-        return $urls;
-    }
-
-    public function getJSONFromNextSearch($urls){
-
-        $response = $this->LARACURL->get($urls);
-
-        return $response;
-    }
-
-    public function genURLForNextSearch2($url_next){
-
         $searchWord = urlencode ( $this->search_word );
 
         $since = $this->getSince();
@@ -194,7 +163,7 @@ class TwitterSearchController extends Controller
         $next_url = $this->genURLForNextSearch($next);
 
         // Extended Response
-        $json = $this->getJSONFromNextSearch($next_url);
+        $json = $this->LARACURL->get($next_url);
         $response = json_decode($json);
         $tweetCount += $response->new_latent_count;
         $cur_html = $response->items_html;
@@ -217,7 +186,7 @@ class TwitterSearchController extends Controller
 
                 $next_url = $this->genURLForNextSearch($response->min_position);
 
-                $json = $this->getJSONFromNextSearch($next_url);
+                $json = $this->LARACURL->get($next_url);
                 $response = json_decode($json);
                 $html = $response->items_html;
                 $tweetCount += $response->new_latent_count;
@@ -316,15 +285,11 @@ class TwitterSearchController extends Controller
         }
     }
 
-
     function retrieveTweetTextFromHtml($body){
-
         $chars = array();
         $steamItems = explode('stream-item-tweet-', $body);
         for ($i = 0 ; $i< count($steamItems) ;$i++){
-
             $text = $this->getFirstTweetText( $steamItems[$i]);
-
             if($text != null){
                 $user_id = $this->getUserIdTweet($steamItems[$i]);
                 $user_ScreenName = $this->getUserScreenNameTweet($steamItems[$i]);
@@ -354,12 +319,9 @@ class TwitterSearchController extends Controller
     }
 
     function getUserIdTweet($body){
-
         $startWord = 'data-user-id="';
         $endWord = '"';
-
         return $this->getTextBetween($body,$startWord, $endWord);
-
     }
 
     function getUserScreenNameTweet($body){
@@ -373,14 +335,12 @@ class TwitterSearchController extends Controller
         $startWord = 'data-name="';
         $endWord = '"';
         return $this->getTextBetween($body,$startWord, $endWord);
-
     }
 
     function getLinkTweet($body){
         $startWord = 'data-permalink-path="';
         $endWord = '"';
         return $this->getTextBetween($body,$startWord, $endWord);
-
     }
 
     function getTextBetween($body,$startWord, $endWord ){
@@ -428,8 +388,6 @@ class TwitterSearchController extends Controller
         }else{
             return null;
         }
-
-
     }
 
     function getMainTweetURLFromMainPage($body){
